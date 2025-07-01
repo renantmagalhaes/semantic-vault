@@ -11,7 +11,7 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 # CONFIGURATION
-VAULT_PATH = "/home/rtm/Data/obsidian/RTM"
+VAULT_PATH = "/path/to/your/obsidian/vault"
 MAX_FILES = 50  # Max number of .md files to load (adjust if needed)
 
 # Options: "gemini", "openai", "ollama"
