@@ -33,7 +33,7 @@ Includes an AI-powered tag generator to enrich your notes automatically — grea
 - Dependencies (use the provided `requirements.txt`)
 
 ```bash
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 - Optional:
@@ -68,7 +68,7 @@ cd semantic-vault
 ### 2. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 ### 3. Configure Environment
@@ -105,7 +105,7 @@ USE_MODEL = "openai"  # Options: "openai", "gemini", "ollama"
 ### 3. Run the Search Tool
 
 ```bash
-python semanticVault.py
+python3 ./semanticVault.py
 ```
 
 Ask your question, get AI-driven answers based on your notes.
@@ -119,7 +119,7 @@ Enrich your notes with relevant, AI-suggested tags.
 ### Usage
 
 ```bash
-python tag_generation.py
+python3 ./auto_tag_generation.py
 ```
 
 Optional flags:
@@ -203,4 +203,4 @@ MIT License — Free to use, modify, and distribute.
 
 ---
 
-## ✨ Stay in Control of Your Knowledge — Search Smarter!
+## ✨ Stay in Control of Your Knowledge — Search Smarter

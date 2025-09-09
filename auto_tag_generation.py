@@ -13,7 +13,7 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 # Vault Location
-VAULT_PATH = "/home/rtm/Data/obsidian/RTM"
+VAULT_PATH = "/path/to/your/obsidian/vault"
 
 # Model Config
 # USE_MODEL = "ollama"
@@ -58,10 +58,13 @@ def generate_tags(note_content, max_new_tags):
         response = client_openai.chat.completions.create(
             model=OPENAI_MODEL,
             messages=[
-                {"role": "system", "content": "You suggest short, relevant tags for notes."},
-                {"role": "user", "content": prompt}
+                {
+                    "role": "system",
+                    "content": "You suggest short, relevant tags for notes.",
+                },
+                {"role": "user", "content": prompt},
             ],
-            max_tokens=100
+            max_tokens=100,
         )
         tags_raw = response.choices[0].message.content.strip()
         return clean_tag_list(tags_raw, max_new_tags)
@@ -102,15 +105,17 @@ def apply_tags_to_vault(vault_path, dry_run=False, force_overwrite=False):
 
                 # Extract YAML and existing tags
                 existing_tags = []
-                yaml_match = re.match(
-                    r"^---\n(.*?)\n---\n", content, re.DOTALL)
+                yaml_match = re.match(r"^---\n(.*?)\n---\n", content, re.DOTALL)
 
                 if yaml_match:
                     yaml_block = yaml_match.group(1)
                     tag_match = re.search(r"tags:\s*\[([^\]]*)\]", yaml_block)
                     if tag_match:
-                        existing_tags = [tag.strip() for tag in tag_match.group(
-                            1).split(",") if tag.strip()]
+                        existing_tags = [
+                            tag.strip()
+                            for tag in tag_match.group(1).split(",")
+                            if tag.strip()
+                        ]
 
                 if len(existing_tags) >= 5 and not force_overwrite:
                     skipped_files += 1
@@ -123,23 +128,30 @@ def apply_tags_to_vault(vault_path, dry_run=False, force_overwrite=False):
                     skipped_files += 1
                     continue
 
-                final_tags = generated_tags if force_overwrite else list(
-                    dict.fromkeys(existing_tags + generated_tags))[:5]
+                final_tags = (
+                    generated_tags
+                    if force_overwrite
+                    else list(dict.fromkeys(existing_tags + generated_tags))[:5]
+                )
                 tag_line = f"tags: [{', '.join(final_tags)}]"
 
                 # Update YAML or prepend
                 if yaml_match:
-                    new_yaml = re.sub(
-                        r"tags:\s*\[[^\]]*\]", tag_line, yaml_block)
+                    new_yaml = re.sub(r"tags:\s*\[[^\]]*\]", tag_line, yaml_block)
                     if "tags:" not in yaml_block:
                         new_yaml += f"\n{tag_line}"
                     updated_content = re.sub(
-                        r"^---\n(.*?)\n---\n", f"---\n{new_yaml}\n---\n", content, flags=re.DOTALL)
+                        r"^---\n(.*?)\n---\n",
+                        f"---\n{new_yaml}\n---\n",
+                        content,
+                        flags=re.DOTALL,
+                    )
                 else:
                     updated_content = f"---\n{tag_line}\n---\n\n{content}"
 
                 print(
-                    f"✅ {'[Dry Run] ' if dry_run else ''}Tags for {full_path} → {final_tags}")
+                    f"✅ {'[Dry Run] ' if dry_run else ''}Tags for {full_path} → {final_tags}"
+                )
 
                 if not dry_run and content != updated_content:
                     with open(full_path, "w", encoding="utf-8") as f:
@@ -156,16 +168,16 @@ def apply_tags_to_vault(vault_path, dry_run=False, force_overwrite=False):
 
 # CLI Entry Point
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Obsidian Vault Tag Generator")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Preview changes without modifying files")
-    parser.add_argument("--force", action="store_true",
-                        help="Overwrite all existing tags with new tags")
+    parser = argparse.ArgumentParser(description="Obsidian Vault Tag Generator")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Preview changes without modifying files"
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="Overwrite all existing tags with new tags"
+    )
 
     args = parser.parse_args()
 
     print(f"\n🗂 Scanning vault at: {VAULT_PATH} with model: {USE_MODEL}")
-    apply_tags_to_vault(VAULT_PATH, dry_run=args.dry_run,
-                        force_overwrite=args.force)
+    apply_tags_to_vault(VAULT_PATH, dry_run=args.dry_run, force_overwrite=args.force)
     print("\n🎉 Tag generation complete.")
