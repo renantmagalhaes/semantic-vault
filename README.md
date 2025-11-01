@@ -20,6 +20,7 @@ Includes an AI-powered tag generator to enrich your notes automatically — grea
 ## 🚀 Features
 
 ✅ AI-Powered Semantic Search (Chat interface)  
+✅ **Beautiful Web Interface** — Modern browser-based UI  
 ✅ Supports OpenAI, Gemini, and Ollama Local LLMs  
 ✅ Markdown & Obsidian Vault Friendly  
 ✅ AI Tag Generation Script — YAML Compatible  
@@ -47,10 +48,12 @@ pip3 install -r requirements.txt
 
 ```
 semantic-vault/
-├── semanticVault.py   # Main Semantic Search Script
-├── tag_generation.py      # AI Tag Generator for Markdown Notes
-├── requirements.txt       # Python dependencies
-├── .env                   # API keys configuration (create this)
+├── semanticVault.py      # Main Semantic Search Script
+├── auto_tag_generation.py # AI Tag Generator for Markdown Notes
+├── templates/
+│   └── index.html        # Web UI template
+├── requirements.txt      # Python dependencies
+├── .env                  # API keys configuration (create this)
 └── README.md
 ```
 
@@ -104,11 +107,29 @@ USE_MODEL = "openai"  # Options: "openai", "gemini", "ollama"
 
 ### 3. Run the Search Tool
 
+**CLI Mode (Command Line):**
+
 ```bash
 python3 ./semanticVault.py
 ```
 
-Ask your question, get AI-driven answers based on your notes.
+Ask your question in the terminal, get AI-driven answers based on your notes.
+
+**Web Interface Mode (Recommended):**
+
+```bash
+python3 ./semanticVault.py --web
+```
+
+Then open your browser to `http://localhost:5000` to access the beautiful web interface!
+
+The web UI features:
+
+- 🎨 Modern, responsive design with gradient themes
+- 💬 Chat-style interface for natural conversations
+- 📊 Real-time statistics (note count, model type)
+- ⚡ Smooth animations and loading indicators
+- 📱 Mobile-friendly responsive layout
 
 ---
 

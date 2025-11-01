@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>
+      Semantic Vault - AI Knowledge
+      Assistant
+    </title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system,
+          BlinkMacSystemFont, "Segoe UI",
+          Roboto, "Helvetica Neue",
+          Arial, sans-serif;
+        background: linear-gradient(
+          135deg,
+          #667eea 0%,
+          #764ba2 100%
+        );
+        min-height: 100vh;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 900px;
+        background: rgba(
+          255,
+          255,
+          255,
+          0.95
+        );
+        border-radius: 20px;
+        box-shadow: 0 20px 60px
+          rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        height: 90vh;
+        max-height: 800px;
+      }
+
+      .header {
+        background: linear-gradient(
+          135deg,
+          #667eea 0%,
+          #764ba2 100%
+        );
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        font-weight: 700;
+        text-shadow: 0 2px 10px
+          rgba(0, 0, 0, 0.2);
+      }
+
+      .header p {
+        font-size: 1.1em;
+        opacity: 0.9;
+      }
+
+      .stats {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+      }
+
+      .stat-badge {
+        background: rgba(
+          255,
+          255,
+          255,
+          0.2
+        );
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.9em;
+        backdrop-filter: blur(10px);
+      }
+
+      .chat-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .chat-container::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .chat-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+      }
+
+      .chat-container::-webkit-scrollbar-thumb {
+        background: #667eea;
+        border-radius: 10px;
+      }
+
+      .welcome-message {
+        text-align: center;
+        color: #666;
+        padding: 40px 20px;
+      }
+
+      .welcome-message h2 {
+        font-size: 1.8em;
+        margin-bottom: 10px;
+        color: #333;
+      }
+
+      .welcome-message p {
+        font-size: 1.1em;
+        line-height: 1.6;
+      }
+
+      .message {
+        display: flex;
+        gap: 12px;
+        animation: slideIn 0.3s ease-out;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .message.user {
+        flex-direction: row-reverse;
+      }
+
+      .message-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2em;
+        flex-shrink: 0;
+      }
+
+      .message.user .message-avatar {
+        background: linear-gradient(
+          135deg,
+          #667eea 0%,
+          #764ba2 100%
+        );
+        color: white;
+      }
+
+      .message.assistant
+        .message-avatar {
+        background: linear-gradient(
+          135deg,
+          #f093fb 0%,
+          #f5576c 100%
+        );
+        color: white;
+      }
+
+      .message-content {
+        max-width: 75%;
+        padding: 15px 20px;
+        border-radius: 18px;
+        line-height: 1.6;
+        word-wrap: break-word;
+      }
+
+      .message.user .message-content {
+        background: linear-gradient(
+          135deg,
+          #667eea 0%,
+          #764ba2 100%
+        );
+        color: white;
+        border-bottom-right-radius: 4px;
+      }
+
+      .message.assistant
+        .message-content {
+        background: #f0f0f0;
+        color: #333;
+        border-bottom-left-radius: 4px;
+      }
+
+      .message-content pre {
+        background: rgba(0, 0, 0, 0.05);
+        padding: 10px;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin-top: 10px;
+      }
+
+      .loading {
+        display: flex;
+        gap: 8px;
+        padding: 15px 20px;
+      }
+
+      .loading-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #667eea;
+        animation: bounce 1.4s infinite
+          ease-in-out both;
+      }
+
+      .loading-dot:nth-child(1) {
+        animation-delay: -0.32s;
+      }
+
+      .loading-dot:nth-child(2) {
+        animation-delay: -0.16s;
+      }
+
+      @keyframes bounce {
+        0%,
+        80%,
+        100% {
+          transform: scale(0);
+        }
+        40% {
+          transform: scale(1);
+        }
+      }
+
+      .input-container {
+        padding: 20px 30px;
+        background: #f8f9fa;
+        border-top: 1px solid #e0e0e0;
+      }
+
+      .input-form {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+      }
+
+      .input-wrapper {
+        flex: 1;
+        position: relative;
+      }
+
+      .input-field {
+        width: 100%;
+        padding: 15px 20px;
+        border: 2px solid #e0e0e0;
+        border-radius: 25px;
+        font-size: 1em;
+        font-family: inherit;
+        outline: none;
+        transition: all 0.3s ease;
+        resize: none;
+        max-height: 120px;
+      }
+
+      .input-field:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px
+          rgba(102, 126, 234, 0.1);
+      }
+
+      .submit-btn {
+        padding: 15px 30px;
+        background: linear-gradient(
+          135deg,
+          #667eea 0%,
+          #764ba2 100%
+        );
+        color: white;
+        border: none;
+        border-radius: 25px;
+        font-size: 1em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        box-shadow: 0 4px 15px
+          rgba(102, 126, 234, 0.4);
+      }
+
+      .submit-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px
+          rgba(102, 126, 234, 0.5);
+      }
+
+      .submit-btn:active:not(
+          :disabled
+        ) {
+        transform: translateY(0);
+      }
+
+      .submit-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .error-message {
+        background: #fee;
+        color: #c33;
+        padding: 15px 20px;
+        border-radius: 10px;
+        border-left: 4px solid #c33;
+        margin: 10px 0;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          height: 100vh;
+          max-height: none;
+          border-radius: 0;
+        }
+
+        .header h1 {
+          font-size: 2em;
+        }
+
+        .message-content {
+          max-width: 85%;
+        }
+
+        .input-form {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .submit-btn {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🔍 Semantic Vault</h1>
+        <p>
+          AI-Powered Knowledge Assistant
+        </p>
+        <div class="stats">
+          <div
+            class="stat-badge"
+            id="model-badge"
+          >
+            Model: {{ model }}
+          </div>
+          <div
+            class="stat-badge"
+            id="notes-badge"
+          >
+            Loading...
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="chat-container"
+        id="chatContainer"
+      >
+        <div class="welcome-message">
+          <h2>
+            Welcome to Semantic Vault!
+          </h2>
+          <p>
+            Ask me anything about your
+            notes. I'll search through
+            your knowledge base and
+            provide you with relevant
+            answers.
+          </p>
+        </div>
+      </div>
+
+      <div class="input-container">
+        <form
+          class="input-form"
+          id="questionForm"
+        >
+          <div class="input-wrapper">
+            <textarea
+              class="input-field"
+              id="questionInput"
+              placeholder="Type your question here..."
+              rows="1"
+              required
+            ></textarea>
+          </div>
+          <button
+            type="submit"
+            class="submit-btn"
+            id="submitBtn"
+          >
+            Ask
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const chatContainer =
+        document.getElementById(
+          "chatContainer"
+        );
+      const questionForm =
+        document.getElementById(
+          "questionForm"
+        );
+      const questionInput =
+        document.getElementById(
+          "questionInput"
+        );
+      const submitBtn =
+        document.getElementById(
+          "submitBtn"
+        );
+      const notesBadge =
+        document.getElementById(
+          "notes-badge"
+        );
+
+      // Auto-resize textarea
+      questionInput.addEventListener(
+        "input",
+        function () {
+          this.style.height = "auto";
+          this.style.height =
+            Math.min(
+              this.scrollHeight,
+              120
+            ) + "px";
+        }
+      );
+
+      // Load stats on page load
+      fetch("/api/stats")
+        .then((res) => res.json())
+        .then((data) => {
+          notesBadge.textContent = `${data.note_count} notes`;
+        })
+        .catch((err) => {
+          notesBadge.textContent =
+            "Stats unavailable";
+        });
+
+      // Handle form submission
+      questionForm.addEventListener(
+        "submit",
+        async (e) => {
+          e.preventDefault();
+
+          const question =
+            questionInput.value.trim();
+          if (!question) return;
+
+          // Remove welcome message if present
+          const welcomeMsg =
+            chatContainer.querySelector(
+              ".welcome-message"
+            );
+          if (welcomeMsg) {
+            welcomeMsg.remove();
+          }
+
+          // Add user message
+          addMessage("user", question);
+          questionInput.value = "";
+          questionInput.style.height =
+            "auto";
+
+          // Disable form
+          submitBtn.disabled = true;
+          submitBtn.textContent =
+            "Thinking...";
+
+          // Show loading indicator
+          const loadingId =
+            addLoadingMessage();
+
+          try {
+            const response =
+              await fetch("/api/ask", {
+                method: "POST",
+                headers: {
+                  "Content-Type":
+                    "application/json"
+                },
+                body: JSON.stringify({
+                  question
+                })
+              });
+
+            const data =
+              await response.json();
+
+            // Remove loading indicator
+            removeMessage(loadingId);
+
+            if (
+              response.ok &&
+              data.answer
+            ) {
+              addMessage(
+                "assistant",
+                data.answer
+              );
+            } else {
+              addMessage(
+                "assistant",
+                data.error ||
+                  "Sorry, I encountered an error. Please try again.",
+                true
+              );
+            }
+          } catch (error) {
+            removeMessage(loadingId);
+            addMessage(
+              "assistant",
+              "Network error. Please check your connection and try again.",
+              true
+            );
+          } finally {
+            // Re-enable form
+            submitBtn.disabled = false;
+            submitBtn.textContent =
+              "Ask";
+            questionInput.focus();
+          }
+        }
+      );
+
+      function addMessage(
+        type,
+        content,
+        isError = false
+      ) {
+        const messageDiv =
+          document.createElement("div");
+        messageDiv.className = `message ${type}`;
+        messageDiv.id = `msg-${Date.now()}`;
+
+        const avatar =
+          document.createElement("div");
+        avatar.className =
+          "message-avatar";
+        avatar.textContent =
+          type === "user" ? "👤" : "🤖";
+
+        const messageContent =
+          document.createElement("div");
+        messageContent.className =
+          isError
+            ? "error-message"
+            : "message-content";
+        messageContent.textContent =
+          content;
+
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(
+          messageContent
+        );
+        chatContainer.appendChild(
+          messageDiv
+        );
+
+        // Scroll to bottom
+        chatContainer.scrollTop =
+          chatContainer.scrollHeight;
+
+        return messageDiv.id;
+      }
+
+      function addLoadingMessage() {
+        const messageDiv =
+          document.createElement("div");
+        messageDiv.className =
+          "message assistant";
+        messageDiv.id = `loading-${Date.now()}`;
+
+        const avatar =
+          document.createElement("div");
+        avatar.className =
+          "message-avatar";
+        avatar.textContent = "🤖";
+
+        const loading =
+          document.createElement("div");
+        loading.className = "loading";
+        for (let i = 0; i < 3; i++) {
+          const dot =
+            document.createElement(
+              "div"
+            );
+          dot.className = "loading-dot";
+          loading.appendChild(dot);
+        }
+
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(loading);
+        chatContainer.appendChild(
+          messageDiv
+        );
+
+        chatContainer.scrollTop =
+          chatContainer.scrollHeight;
+
+        return messageDiv.id;
+      }
+
+      function removeMessage(id) {
+        const message =
+          document.getElementById(id);
+        if (message) {
+          message.remove();
+        }
+      }
+
+      // Allow Enter to submit (Shift+Enter for new line)
+      questionInput.addEventListener(
+        "keydown",
+        (e) => {
+          if (
+            e.key === "Enter" &&
+            !e.shiftKey
+          ) {
+            e.preventDefault();
+            questionForm.dispatchEvent(
+              new Event("submit")
+            );
+          }
+        }
+      );
+    </script>
+  </body>
+</html>
