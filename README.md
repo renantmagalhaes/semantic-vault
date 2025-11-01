@@ -7,7 +7,7 @@
 
 ## 📖 Overview
 
-**Semantic Vault** brings semantic search to your Markdown notes, optimized for Obsidian users but adaptable to any `.md` folder. Ask natural language questions and get relevant answers based on your notes.
+**Semantic Vault** brings semantic search to your Markdown and text notes, optimized for Obsidian users but adaptable to any folder with `.md` or `.txt` files. Ask natural language questions and get relevant answers based on your notes.
 
 Includes an AI-powered tag generator to enrich your notes automatically — great for organizing Obsidian vaults.
 
@@ -19,10 +19,12 @@ Includes an AI-powered tag generator to enrich your notes automatically — grea
 
 ## 🚀 Features
 
+✅ **Semantic Search with Embeddings** — Find relevant notes intelligently, no file limits!  
 ✅ AI-Powered Semantic Search (Chat interface)  
 ✅ **Beautiful Web Interface** — Modern browser-based UI  
 ✅ Supports OpenAI, Gemini, and Ollama Local LLMs  
-✅ Markdown & Obsidian Vault Friendly  
+✅ **CPU-Only Embeddings** — No GPU required, runs efficiently on any machine  
+✅ Markdown & Text File Support (.md and .txt files)  
 ✅ AI Tag Generation Script — YAML Compatible  
 ✅ Easy Setup with `requirements.txt`
 
@@ -37,6 +39,7 @@ Includes an AI-powered tag generator to enrich your notes automatically — grea
 pip3 install -r requirements.txt
 ```
 
+- **No GPU Required** — Semantic search runs efficiently on CPU
 - Optional:
   - OpenAI API Key → [Get one](https://platform.openai.com/account/api-keys)
   - Google Gemini API Key → [Get one](https://aistudio.google.com/app/apikey)
@@ -52,6 +55,7 @@ semantic-vault/
 ├── auto_tag_generation.py # AI Tag Generator for Markdown Notes
 ├── templates/
 │   └── index.html        # Web UI template
+├── .embeddings_cache/    # Cached embeddings (auto-generated)
 ├── requirements.txt      # Python dependencies
 ├── .env                  # API keys configuration (create this)
 └── README.md
@@ -97,7 +101,23 @@ Edit `semanticVault.py`:
 VAULT_PATH = "/path/to/your/obsidian/vault"
 ```
 
-### 2. Choose Your AI Model
+### 2. Configure Semantic Search (Optional)
+
+Semantic search is **enabled by default** and works with unlimited files! Edit `semanticVault.py`:
+
+```python
+USE_SEMANTIC_SEARCH = True  # Enable semantic search (recommended)
+TOP_K_NOTES = 10            # Number of most relevant notes to use (adjust as needed)
+```
+
+**Benefits:**
+
+- ✅ **No file limits** — Works with vaults of any size
+- ✅ **Cost efficient** — Only sends relevant notes to LLM (saves API costs)
+- ✅ **Better accuracy** — Finds semantically relevant notes, not random ones
+- ✅ **CPU-only** — No GPU required, runs on any machine
+
+### 3. Choose Your AI Model
 
 In `semanticVault.py`:
 
@@ -105,7 +125,9 @@ In `semanticVault.py`:
 USE_MODEL = "openai"  # Options: "openai", "gemini", "ollama"
 ```
 
-### 3. Run the Search Tool
+**Note:** Semantic search works with all three providers! The embeddings are generated locally using CPU, then only the most relevant notes are sent to your chosen LLM.
+
+### 4. Run the Search Tool
 
 **CLI Mode (Command Line):**
 
@@ -130,6 +152,25 @@ The web UI features:
 - 📊 Real-time statistics (note count, model type)
 - ⚡ Smooth animations and loading indicators
 - 📱 Mobile-friendly responsive layout
+
+### How Semantic Search Works
+
+1. **First Run:** Generates embeddings for all your notes (one-time, ~1-5 minutes depending on vault size)
+   - Embeddings are cached automatically in `.embeddings_cache/`
+   - Uses lightweight CPU-only model (`all-MiniLM-L6-v2`)
+2. **Subsequent Queries:**
+
+   - Finds the top K most relevant notes using semantic similarity
+   - Only sends those relevant notes to the LLM (saves costs!)
+   - Typically finds results in <1 second
+
+3. **Automatic Updates:** Embeddings are regenerated only when notes change
+
+**Performance:**
+
+- First run: 10-30 seconds (small vault) to 2-5 minutes (large vault)
+- Subsequent queries: Near-instant (uses cached embeddings)
+- No GPU needed: Runs efficiently on CPU
 
 ---
 
@@ -197,9 +238,9 @@ Supports lightweight, privacy-friendly models locally.
 
 - Full-featured Obsidian Plugin (Separate project)
 - Persistent chat mode to refine questions without losing context
-- Scalable search for large vaults
 - More advanced tag generation modes
 - CLI improvements and advanced filters
+- Custom embedding models and fine-tuning options
 
 ---
 
@@ -220,6 +261,7 @@ MIT License — Free to use, modify, and distribute.
 - OpenAI
 - Google Gemini
 - Ollama
+- Sentence Transformers (for semantic search embeddings)
 - Inspired by Obsidian Copilot
 
 ---
