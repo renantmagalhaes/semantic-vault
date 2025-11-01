@@ -27,7 +27,7 @@ load_dotenv()
 
 # Vault config
 # change to your Obsidian vault root
-VAULT_PATH = "/path/to/your/obsidian/vault"
+VAULT_PATH = "/path/to/your/vault"
 # limit how many files to stuff into the prompt (only used if SEMANTIC_SEARCH=False)
 MAX_FILES = 50
 MAX_CHARS_PER_NOTE = 8000  # truncate very large notes to keep prompt manageable
@@ -137,6 +137,7 @@ def get_cache_path(vault_path: str) -> str:
 def generate_embeddings(notes: List[Dict[str, str]], force_rebuild: bool = False) -> Tuple[List, object]:
     """
     Generate embeddings for all notes and cache them.
+    Automatically detects changes in vault (file additions, deletions, modifications).
     Returns tuple of (embeddings_list, model).
     """
     if not SEMANTIC_SEARCH_AVAILABLE:
@@ -151,11 +152,42 @@ def generate_embeddings(notes: List[Dict[str, str]], force_rebuild: bool = False
         try:
             with open(cache_path, "rb") as f:
                 cached_data = pickle.load(f)
-                if cached_data.get("note_paths") == [n["path"] for n in notes]:
+
+            # Check if cache is still valid by comparing:
+            # 1. Number of files (detects additions/deletions)
+            # 2. File paths (detects renames)
+            # 3. File modification times (detects content changes)
+            cached_paths = cached_data.get("note_paths", [])
+            cached_mtimes = cached_data.get("note_mtimes", {})
+            current_paths = [n["path"] for n in notes]
+
+            # Check if paths match
+            if cached_paths == current_paths:
+                # Check if any file modification times changed
+                cache_valid = True
+                for note in notes:
+                    note_path = note["path"]
+                    try:
+                        current_mtime = os.path.getmtime(note_path)
+                        cached_mtime = cached_mtimes.get(note_path)
+                        if cached_mtime is None or cached_mtime != current_mtime:
+                            cache_valid = False
+                            break
+                    except OSError:
+                        # File might have been deleted or moved
+                        cache_valid = False
+                        break
+
+                if cache_valid:
                     print("📦 Using cached embeddings...")
                     # Explicitly use CPU - no GPU needed
                     model = SentenceTransformer(EMBEDDING_MODEL, device='cpu')
                     return cached_data["embeddings"], model
+                else:
+                    print("🔄 Vault files changed, regenerating embeddings...")
+            else:
+                print(
+                    "🔄 Vault structure changed (files added/removed), regenerating embeddings...")
         except Exception as e:
             print(f"⚠️  Cache load failed, regenerating: {e}")
 
@@ -172,12 +204,21 @@ def generate_embeddings(notes: List[Dict[str, str]], force_rebuild: bool = False
 
     embeddings = model.encode(texts, show_progress_bar=True)
 
-    # Cache embeddings
+    # Cache embeddings with metadata for change detection
     try:
+        # Store modification times for each note file
+        note_mtimes = {}
+        for note in notes:
+            try:
+                note_mtimes[note["path"]] = os.path.getmtime(note["path"])
+            except OSError:
+                pass  # Skip if file doesn't exist
+
         with open(cache_path, "wb") as f:
             pickle.dump({
                 "embeddings": embeddings,
-                "note_paths": [n["path"] for n in notes]
+                "note_paths": [n["path"] for n in notes],
+                "note_mtimes": note_mtimes
             }, f)
         print("✅ Embeddings cached successfully")
     except Exception as e:
