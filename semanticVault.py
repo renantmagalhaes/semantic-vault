@@ -27,7 +27,7 @@ load_dotenv()
 
 # Vault config
 # change to your Obsidian vault root
-VAULT_PATH = "/path/to/your/vault"
+VAULT_PATH = "/tmp/vault"
 # limit how many files to stuff into the prompt (only used if SEMANTIC_SEARCH=False)
 MAX_FILES = 50
 MAX_CHARS_PER_NOTE = 8000  # truncate very large notes to keep prompt manageable
@@ -40,6 +40,9 @@ EMBEDDINGS_CACHE_DIR = os.path.join(
     os.path.dirname(__file__), ".embeddings_cache")
 # CPU-only embedding model - no GPU required, runs efficiently on CPU
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+
+# Chat history config
+CHAT_HISTORY_DIR = os.path.join(os.path.dirname(__file__), ".chat_history")
 
 # Model selector: "gemini", "openai", "ollama"
 # USE_MODEL = "ollama"
@@ -411,8 +414,14 @@ def ask_question(question: str, return_answer: bool = False) -> Optional[str]:
 
 def create_app():
     from flask import Flask, render_template, request, jsonify
+    from datetime import datetime
 
     app = Flask(__name__)
+    os.makedirs(CHAT_HISTORY_DIR, exist_ok=True)
+
+    def get_chat_file(chat_id: str) -> str:
+        """Get file path for a chat by ID."""
+        return os.path.join(CHAT_HISTORY_DIR, f"{chat_id}.json")
 
     @app.route('/')
     def index():
@@ -422,12 +431,104 @@ def create_app():
     def api_ask():
         data = request.get_json()
         question = data.get('question', '').strip()
+        chat_id = data.get('chat_id')  # Optional: for continuing a chat
 
         if not question:
             return jsonify({'error': 'Please provide a non-empty question.'}), 400
 
         answer = ask_question(question, return_answer=True)
-        return jsonify({'answer': answer})
+
+        # Save to chat history
+        if chat_id:
+            chat_file = get_chat_file(chat_id)
+            if os.path.exists(chat_file):
+                with open(chat_file, 'r', encoding='utf-8') as f:
+                    chat_data = json.load(f)
+            else:
+                chat_data = {'messages': []}
+        else:
+            # Create new chat
+            chat_id = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+            chat_data = {
+                'id': chat_id,
+                'created': datetime.now().isoformat(),
+                'messages': []
+            }
+
+        # Add new messages
+        chat_data['messages'].append({
+            'role': 'user',
+            'content': question,
+            'timestamp': datetime.now().isoformat()
+        })
+        chat_data['messages'].append({
+            'role': 'assistant',
+            'content': answer,
+            'timestamp': datetime.now().isoformat()
+        })
+        chat_data['updated'] = datetime.now().isoformat()
+
+        # Save chat
+        chat_file = get_chat_file(chat_data.get('id', chat_id))
+        with open(chat_file, 'w', encoding='utf-8') as f:
+            json.dump(chat_data, f, indent=2, ensure_ascii=False)
+
+        return jsonify({
+            'answer': answer,
+            'chat_id': chat_data.get('id', chat_id)
+        })
+
+    @app.route('/api/chats', methods=['GET'])
+    def api_chats():
+        """Get list of all chats."""
+        chats = []
+        try:
+            for filename in os.listdir(CHAT_HISTORY_DIR):
+                if filename.endswith('.json'):
+                    chat_id = filename[:-5]
+                    chat_file = get_chat_file(chat_id)
+                    with open(chat_file, 'r', encoding='utf-8') as f:
+                        chat_data = json.load(f)
+                    messages = chat_data.get('messages', [])
+                    if messages:
+                        first_question = next(
+                            (m['content']
+                             for m in messages if m['role'] == 'user'),
+                            'New chat'
+                        )
+                        chats.append({
+                            'id': chat_data.get('id', chat_id),
+                            'title': first_question[:50] + ('...' if len(first_question) > 50 else ''),
+                            'created': chat_data.get('created', ''),
+                            'updated': chat_data.get('updated', ''),
+                            'message_count': len(messages)
+                        })
+        except Exception as e:
+            print(f"Error loading chats: {e}")
+
+        # Sort by updated time (newest first)
+        chats.sort(key=lambda x: x.get('updated', ''), reverse=True)
+        return jsonify({'chats': chats})
+
+    @app.route('/api/chat/<chat_id>', methods=['GET'])
+    def api_get_chat(chat_id):
+        """Get a specific chat by ID."""
+        chat_file = get_chat_file(chat_id)
+        if not os.path.exists(chat_file):
+            return jsonify({'error': 'Chat not found'}), 404
+
+        with open(chat_file, 'r', encoding='utf-8') as f:
+            chat_data = json.load(f)
+        return jsonify(chat_data)
+
+    @app.route('/api/chat/<chat_id>', methods=['DELETE'])
+    def api_delete_chat(chat_id):
+        """Delete a chat."""
+        chat_file = get_chat_file(chat_id)
+        if os.path.exists(chat_file):
+            os.remove(chat_file)
+            return jsonify({'success': True})
+        return jsonify({'error': 'Chat not found'}), 404
 
     @app.route('/api/stats', methods=['GET'])
     def api_stats():

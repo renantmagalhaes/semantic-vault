@@ -208,3 +208,6 @@ __marimo__/
 
 # Semantic Vault embeddings cache
 .embeddings_cache/
+
+# Semantic Vault chat history
+.chat_history/
