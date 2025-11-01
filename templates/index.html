@@ -945,8 +945,12 @@
           isError
             ? "error-message"
             : "message-content";
-        messageContent.textContent =
-          content;
+        messageContent.innerHTML =
+          isError
+            ? escapeHtml(content)
+            : formatMessageContent(
+                content
+              );
 
         messageDiv.appendChild(avatar);
         messageDiv.appendChild(
@@ -1013,6 +1017,19 @@
           document.createElement("div");
         div.textContent = text;
         return div.innerHTML;
+      }
+
+      function formatMessageContent(
+        text
+      ) {
+        // Escape HTML to prevent XSS attacks
+        const escaped =
+          escapeHtml(text);
+        // Convert line breaks to <br> tags
+        return escaped.replace(
+          /\n/g,
+          "<br>"
+        );
       }
 
       function formatDate(dateString) {

@@ -27,7 +27,7 @@ load_dotenv()
 
 # Vault config
 # change to your Obsidian vault root
-VAULT_PATH = "/tmp/vault"
+VAULT_PATH = "/path/to/your/obsidian/vault"
 # limit how many files to stuff into the prompt (only used if SEMANTIC_SEARCH=False)
 MAX_FILES = 50
 MAX_CHARS_PER_NOTE = 8000  # truncate very large notes to keep prompt manageable
@@ -258,9 +258,16 @@ def find_relevant_notes(question: str, all_notes: List[Dict[str, str]],
 
 
 def build_prompt(notes: List[Dict[str, str]], question: str) -> str:
+    from datetime import datetime
+    current_datetime = datetime.now()
+    current_day_name = current_datetime.strftime("%A, %B %d, %Y")
+    current_time = current_datetime.strftime("%H:%M:%S")
+
     header = (
-        "You are my knowledge assistant. Use only the provided notes. "
-        "If the answer is not present in the notes, say you do not have enough information. "
+        f"You are my knowledge assistant. The current date and time is: {current_day_name} at {current_time} (ISO: {current_datetime.isoformat()}).\n"
+        f"Use the provided notes and this current date/time context to answer the question. "
+        "Use mainly my notes (but not limited to them) to answer the question. "
+        "When the user asks about 'today', they mean the current date mentioned above.\n"
         "Return a concise answer.\n\n"
     )
     body = []

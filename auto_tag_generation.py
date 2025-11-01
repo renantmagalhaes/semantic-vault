@@ -13,7 +13,7 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 # Vault Location
-VAULT_PATH = "/tmp/vault"
+VAULT_PATH = "/path/to/your/obsidian/vault"
 
 # Model Config
 # USE_MODEL = "ollama"
